@@ -59,7 +59,7 @@ extern "C" {
 #define HID_KEY_1              30   // Keyboard 1 and !
 #define HID_KEY_2              31   // Keyboard 2 and @
 #define HID_KEY_3              32   // Keyboard 3 and #
-#define HID_KEY_4              33   // Keyboard 4 and %
+#define HID_KEY_4              33   // Keyboard 4 and $
 #define HID_KEY_5              34   // Keyboard 5 and %
 #define HID_KEY_6              35   // Keyboard 6 and ^
 #define HID_KEY_7              36   // Keyboard 7 and &

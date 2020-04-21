@@ -165,10 +165,9 @@ static void consumer_send_task(void* pvParameters)
 void printf_hello_world()
 {
 
-	//xQueueSendToBack(keyboard_queue, , 1000);
-	uint8_t str[] = "Hello World!";
+	char str[] = "Hello World!";
 
-	keyboard_macro(str, strlen(str));
+	keyboard_macro(&str, strlen(str));
 
 }
 void app_main(void)
