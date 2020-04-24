@@ -23,11 +23,35 @@
 extern "C" {
 #endif
 
+// HID keyboard input report length
+#define HID_KEYBOARD_IN_RPT_LEN     8
+
+// HID LED output report length
+#define HID_LED_OUT_RPT_LEN         1
+
+// HID mouse input report length
+#define HID_MOUSE_IN_RPT_LEN        5
+
+// HID consumer control input report length
+#define HID_CC_IN_RPT_LEN           2
+
+#define LEFT_CONTROL_KEY_MASK        (1 << 0)
+#define LEFT_SHIFT_KEY_MASK          (1 << 1)
+#define LEFT_ALT_KEY_MASK            (1 << 2)
+#define LEFT_GUI_KEY_MASK            (1 << 3)
+#define RIGHT_CONTROL_KEY_MASK       (1 << 4)
+#define RIGHT_SHIFT_KEY_MASK         (1 << 5)
+#define RIGHT_ALT_KEY_MASK           (1 << 6)
+#define RIGHT_GUI_KEY_MASK           (1 << 7)
+
+typedef uint8_t key_mask_t;
+
+
 typedef enum {
-    ESP_HIDD_EVENT_REG_FINISH = 0,                     
+    ESP_HIDD_EVENT_REG_FINISH = 0,
     ESP_BAT_EVENT_REG,
-    ESP_HIDD_EVENT_DEINIT_FINISH,                       
-    ESP_HIDD_EVENT_BLE_CONNECT,                         
+    ESP_HIDD_EVENT_DEINIT_FINISH,
+    ESP_HIDD_EVENT_BLE_CONNECT,
     ESP_HIDD_EVENT_BLE_DISCONNECT,
     ESP_HIDD_EVENT_BLE_VENDOR_REPORT_WRITE_EVT,
 } esp_hidd_cb_event_t;
@@ -35,7 +59,7 @@ typedef enum {
 /// HID config status
 typedef enum {
     ESP_HIDD_STA_CONN_SUCCESS = 0x00,
-    ESP_HIDD_STA_CONN_FAIL    = 0x01,
+    ESP_HIDD_STA_CONN_FAIL = 0x01,
 } esp_hidd_sta_conn_state_t;
 
 /// HID init status
@@ -50,59 +74,49 @@ typedef enum {
     ESP_HIDD_DEINIT_FAILED = 0,
 } esp_hidd_deinit_state_t;
 
-#define LEFT_CONTROL_KEY_MASK        (1 << 0)
-#define LEFT_SHIFT_KEY_MASK          (1 << 1)
-#define LEFT_ALT_KEY_MASK            (1 << 2)
-#define LEFT_GUI_KEY_MASK            (1 << 3)
-#define RIGHT_CONTROL_KEY_MASK       (1 << 4)
-#define RIGHT_SHIFT_KEY_MASK         (1 << 5)
-#define RIGHT_ALT_KEY_MASK           (1 << 6)
-#define RIGHT_GUI_KEY_MASK           (1 << 7)
-
-typedef uint8_t key_mask_t;
 /**
- * @brief HIDD callback parameters union 
+ * @brief HIDD callback parameters union
  */
 typedef union {
     /**
-	 * @brief ESP_HIDD_EVENT_INIT_FINISH
-	 */
+     * @brief ESP_HIDD_EVENT_INIT_FINISH
+     */
     struct hidd_init_finish_evt_param {
-        esp_hidd_init_state_t state;				/*!< Initial status */
+        esp_hidd_init_state_t state;                /*!< Initial status */
         esp_gatt_if_t gatts_if;
-    } init_finish;							      /*!< HID callback param of ESP_HIDD_EVENT_INIT_FINISH */
+    } init_finish;                                  /*!< HID callback param of ESP_HIDD_EVENT_INIT_FINISH */
 
     /**
-	 * @brief ESP_HIDD_EVENT_DEINIT_FINISH
-	 */
+     * @brief ESP_HIDD_EVENT_DEINIT_FINISH
+     */
     struct hidd_deinit_finish_evt_param {
-        esp_hidd_deinit_state_t state;				/*!< De-initial status */
-    } deinit_finish;								/*!< HID callback param of ESP_HIDD_EVENT_DEINIT_FINISH */
+        esp_hidd_deinit_state_t state;              /*!< De-initial status */
+    } deinit_finish;                                /*!< HID callback param of ESP_HIDD_EVENT_DEINIT_FINISH */
 
     /**
      * @brief ESP_HIDD_EVENT_CONNECT
-	 */
+     */
     struct hidd_connect_evt_param {
         uint16_t conn_id;
         esp_bd_addr_t remote_bda;                   /*!< HID Remote bluetooth connection index */
-    } connect;									    /*!< HID callback param of ESP_HIDD_EVENT_CONNECT */
+    } connect;                                      /*!< HID callback param of ESP_HIDD_EVENT_CONNECT */
 
     /**
      * @brief ESP_HIDD_EVENT_DISCONNECT
-	 */
+     */
     struct hidd_disconnect_evt_param {
         esp_bd_addr_t remote_bda;                   /*!< HID Remote bluetooth device address */
-    } disconnect;									/*!< HID callback param of ESP_HIDD_EVENT_DISCONNECT */
+    } disconnect;                                   /*!< HID callback param of ESP_HIDD_EVENT_DISCONNECT */
 
     /**
      * @brief ESP_HIDD_EVENT_BLE_VENDOR_REPORT_WRITE_EVT
-	 */
+     */
     struct hidd_vendor_write_evt_param {
         uint16_t conn_id;                           /*!< HID connection index */
         uint16_t report_id;                         /*!< HID report index */
         uint16_t length;                            /*!< data length */
-        uint8_t  *data;                             /*!< The pointer to the data */
-    } vendor_write;									/*!< HID callback param of ESP_HIDD_EVENT_BLE_VENDOR_REPORT_WRITE_EVT */
+        uint8_t *data;                              /*!< The pointer to the data */
+    } vendor_write;                                 /*!< HID callback param of ESP_HIDD_EVENT_BLE_VENDOR_REPORT_WRITE_EVT */
 
 } esp_hidd_cb_param_t;
 
@@ -148,7 +162,7 @@ esp_err_t esp_hidd_profile_deinit(void);
 /**
  *
  * @brief           Get hidd profile version
- * 
+ *
  * @return          Most 8bit significant is Great version, Least 8bit is Sub version
  *
  */
@@ -156,7 +170,9 @@ uint16_t esp_hidd_get_version(void);
 
 void esp_hidd_send_consumer_value(uint16_t conn_id, uint8_t key_cmd, bool key_pressed);
 
-void esp_hidd_send_keyboard_value(uint16_t conn_id, key_mask_t special_key_mask, uint8_t *keyboard_cmd, uint8_t num_key);
+//void esp_hidd_send_keyboard_value(uint16_t conn_id, key_mask_t special_key_mask, uint8_t *keyboard_cmd, uint8_t num_key);
+
+void esp_hidd_send_keyboard_value(uint16_t conn_id, uint8_t *keyboard_cmd);
 
 void esp_hidd_send_mouse_value(uint16_t conn_id, uint8_t mouse_button, int8_t mickeys_x, int8_t mickeys_y);
 

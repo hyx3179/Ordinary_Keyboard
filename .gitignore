@@ -341,3 +341,5 @@ healthchecksdb
 /build
 /sdkconfig
 /sdkconfig.old
+/out
+*.orig

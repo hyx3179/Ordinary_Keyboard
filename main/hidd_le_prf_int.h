@@ -51,7 +51,7 @@
 #define HID_RPT_ID_LED_OUT       0  // LED output report ID
 #define HID_RPT_ID_FEATURE       0  // Feature report ID
 
-#define HIDD_APP_ID			0x1812//ATT_SVC_HID
+#define HIDD_APP_ID         0x1812//ATT_SVC_HID
 
 #define BATTRAY_APP_ID       0x180f
 
@@ -153,7 +153,7 @@ enum {
     HIDD_LE_IDX_REPORT_CC_IN_VAL,
     HIDD_LE_IDX_REPORT_CC_IN_CCC,
     HIDD_LE_IDX_REPORT_CC_IN_REP_REF,
-    
+
     // Boot Keyboard Input Report
     HIDD_LE_IDX_BOOT_KB_IN_REPORT_CHAR,
     HIDD_LE_IDX_BOOT_KB_IN_REPORT_VAL,
@@ -291,24 +291,22 @@ typedef struct {
 } hidd_inst_t;
 
 /// Report Reference structure
-typedef struct
-{
+typedef struct {
     ///Report ID
     uint8_t report_id;
     ///Report Type
     uint8_t report_type;
-}hids_report_ref_t;
+} hids_report_ref_t;
 
 /// HID Information structure
-typedef struct
-{
+typedef struct {
     /// bcdHID
     uint16_t bcdHID;
     /// bCountryCode
     uint8_t bCountryCode;
     /// Flags
     uint8_t flags;
-}hids_hid_info_t;
+} hids_hid_info_t;
 
 
 /* service engine control block */
