@@ -106,35 +106,14 @@ const uint16_t char2key[] = { /**< 字符与键值对应表 */
     HID_KEY_GRV_ACCENT + (LEFT_SHIFT_KEY_MASK << 8)  //    01111110    126    7E    "~"
 };
 
-//void text(uint8_t* macro, int* i, int A, int B, int C, QueueHandle_t keyboard_queue)
-//{
-//
-//  uint8_t key_vaule[8] = { 0 };
-//
-//  key_vaule[0] += LEFT_SHIFT_KEY_MASK;
-//  for (int n = 0; n <= HID_KEYBOARD_IN_RPT_LEN - 2; n++, *i++) {
-//      if (A <= macro[*i + n] && macro[*i + n] <= B) {
-//          key_vaule[2 + n] = macro[*i] - C;
-//      }
-//      else {
-//          key_vaule[1] = n;
-//          break;
-//      }
-//  }
-//  ESP_LOGI(KM_TAG, "the key vaule = %d,%d,%d, %d, %d, %d,%d, %d", key_vaule[0],
-//      key_vaule[1], key_vaule[2], key_vaule[3], key_vaule[4], key_vaule[5], key_vaule[6], key_vaule[7]);
-//  xQueueSendToBack(keyboard_queue, &key_vaule, 1000);
-//}
-
-
 void post_item(uint8_t *key_vaule)
 {
-    extern xQueueHandle keyboard_queue;
-    ESP_LOGD(KM_TAG, "the key vaule = %d, %d, %d, %d, %d, %d, %d, %d", key_vaule[0],
+    //extern xQueueHandle keyboard_queue;
+    ESP_LOGI(KM_TAG, "the key vaule = %d, %d, %d, %d, %d, %d, %d, %d", key_vaule[0],
              key_vaule[1], key_vaule[2], key_vaule[3], key_vaule[4], key_vaule[5], key_vaule[6], key_vaule[7]);
-    xQueueSendToBack(keyboard_queue, key_vaule, 0);
+    //xQueueSendToBack(keyboard_queue, key_vaule, 0);
     memset(key_vaule, 0, KEY_VAULE_LEN);
-    xQueueSendToBack(keyboard_queue, key_vaule, 0);
+    //xQueueSendToBack(keyboard_queue, key_vaule, 0);
 }
 
 int STR_cmd_handle(uint8_t *str)
@@ -153,9 +132,9 @@ int STR_cmd_handle(uint8_t *str)
         case 0:
             post_item(key_vaule);
             return i;
-        case '\\':
-            post_item(key_vaule);
-            return i - 1;
+        //case '\\':
+        //    post_item(key_vaule);
+        //    return i - 1;
         default:
             if (KEY_MAP(str[i]) > 255) {
                 if (n > 2 && lowercase) {
@@ -163,7 +142,7 @@ int STR_cmd_handle(uint8_t *str)
                     lowercase = false;
                     n = 2;
                 }
-                key_vaule[0] = KEY_MAP(str[i]) >> 8;
+                key_vaule[0] += KEY_MAP(str[i]) >> 8;
                 key_vaule[n] = KEY_MAP(str[i]);
                 n++;
                 capital = true;
@@ -196,67 +175,94 @@ int STR_cmd_handle(uint8_t *str)
 
 esp_err_t keyboard_macro_handle(uint8_t *macro, int len)
 {
-    esp_err_t err = ESP_OK;
-    static uint8_t key_vaule[KEY_VAULE_LEN];
+    uint8_t key_vaule[KEY_VAULE_LEN];
     memset(&key_vaule, 0, KEY_VAULE_LEN);
 
     for (int i = 0, n = 2; i < len; i++) {
-        ESP_LOGD(KM_TAG, "keyboard_macro");
-        //if ('A' <= macro[i_asd] && macro[i_asd] <= 'Z') {
-        //  text(macro, &i_asd, 'A', 'Z', 61, keyboard_queue);
-        //}
-
-        //if ('a' <= macro[i_asd] && macro[i_asd] <= 'z') {
-        //  text(macro, &i_asd, 'a', 'z', 93, keyboard_queue);
-        //}
-
-        //if (' ' <= macro[i_asd] && macro[i_asd] <= ' ') {
-        //  text(macro, &i_asd, ' ', ' ', (-12), keyboard_queue);
-        //}
-
-        //if ('!' <= macro[i_asd] && macro[i_asd] <= '!') {
-        //  text(macro, &i_asd, '!', '!', 3, keyboard_queue);
-        //}
+        if (n == 8) {
+            return ESP_ERR_INVALID_ARG;
+        }
         switch ((macro[i] << 16) + (macro[i + 1] << 8) + macro[i + 2]) {
         case STR:
             i += 3;
             i += STR_cmd_handle(&macro[i]);
-            ESP_LOGD(KM_TAG, "STR i = %d", i);
             break;
-        //case ESCAPE:
-        //case TAB:
-        //case CAPSLOCK:
-        //case LEFTCONTORL:
-        //case LEFTSHIFT:
-        //case LEFTALT:
-        //case LEFTGUI:
-        //case RIGHTCONTORL:
-        //case RIGHTSHIFT:
-        //case RIGHTALT:
-        //case RIGHTGUI:
+        case ESCAPE:
+            key_vaule[n] = HID_KEY_ESCAPE;
+            n++;
+            i += 2;
+            break;
+        case TAB:
+            key_vaule[n] = HID_KEY_TAB;
+            n++;
+            i += 2;
+            break;
+        case CAPSLOCK:
+            key_vaule[n] = HID_KEY_CAPS_LOCK;
+            n++;
+            i += 2;
+            break;
         case ENTER:
             key_vaule[n] = HID_KEY_ENTER;
             n++;
-            i += 3;
-            ESP_LOGD(KM_TAG, "ENTER i = %d", i);
+            i += 2;
             break;
-        //case BACKSPACE:
+        case BACKSPACE:
+            key_vaule[n] = HID_KEY_DELETE;
+            n++;
+            i += 2;
+            break;
+        case LEFTCONTORL:
+            key_vaule[0] += LEFT_CONTROL_KEY_MASK;
+            i += 2;
+            break;
+        case LEFTSHIFT:
+            key_vaule[0] += LEFT_SHIFT_KEY_MASK;
+            i += 2;
+            break;
+        case LEFTALT:
+            key_vaule[0] += LEFT_ALT_KEY_MASK;
+            i += 2;
+            break;
+        case LEFTGUI:
+            key_vaule[0] += LEFT_GUI_KEY_MASK;
+            i += 2;
+            break;
+        case RIGHTCONTORL:
+            key_vaule[0] += RIGHT_CONTROL_KEY_MASK;
+            i += 2;
+            break;
+        case RIGHTSHIFT:
+            key_vaule[0] += RIGHT_SHIFT_KEY_MASK;
+            i += 2;
+            break;
+        case RIGHTALT:
+            key_vaule[0] += RIGHT_ALT_KEY_MASK;
+            i += 2;
+            break;
+        case RIGHTGUI:
+            key_vaule[0] += RIGHT_GUI_KEY_MASK;
+            i += 2;
+            break;
         default:
             if (i == 0) {
                 return ESP_ERR_INVALID_ARG;
             }
-            if (macro[i] == '\\') {
-                key_vaule[2] = KEY_MAP('\\');
-                post_item(key_vaule);
-                i++;
-                i += STR_cmd_handle(&macro[i]);
-            }
-            break;
+            //if (macro[i] == '\\') {
+            //    key_vaule[2] = KEY_MAP('\\');
+            //    post_item(key_vaule);
+            //    i++;
+            //    i += STR_cmd_handle(&macro[i]);
+            //    break;
+            //}
+            key_vaule[n] = KEY_MAP(macro[i]);
+            n++;
         }
-        if (macro[i] == '/') {
+        if (macro[i + 1] == '/') {
             post_item(key_vaule);
             i++;
+            n = 2;
         }
     }
-    return err;
+    return ESP_OK;
 }

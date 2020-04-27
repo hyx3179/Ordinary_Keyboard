@@ -32,14 +32,11 @@
 #define HID_TAG               "HID"
 #define HIDD_DEVICE_NAME      "OK"
 
-
 static uint16_t hid_conn_id = 0;
 static bool sec_conn = false;
-//static bool send_volum_up = false;
 
 xQueueHandle keyboard_queue = NULL;
 xQueueHandle consumer_queue = NULL;
-
 
 static uint8_t hidd_service_uuid128[] = {
     /* LSB <--------------------------------------------------------------------------------> MSB */
@@ -161,6 +158,7 @@ static void consumer_send_task(void *pvParameters)
         }
     }
 }
+
 void printf_hello_world()
 {
     vTaskDelay(1000 / portTICK_PERIOD_MS);
@@ -169,15 +167,10 @@ void printf_hello_world()
         if (sec_conn) {
             uint8_t str[] = "\\STHello World!\\EN/";
             keyboard_macro_handle(str, sizeof(str));
-
-            //uint8_t key_vaule[8] = { 0,0,HID_KEY_A, HID_KEY_B,0,0,0,0 };
-            //esp_hidd_send_keyboard_value(hid_conn_id, key_vaule);
-            //memset(&key_vaule, 0, sizeof(key_vaule));
-            //esp_hidd_send_keyboard_value(hid_conn_id, key_vaule);
         }
     }
-
 }
+
 void app_main(void)
 {
     esp_err_t ret;
@@ -253,4 +246,3 @@ void app_main(void)
     //text
     printf_hello_world();
 }
-
