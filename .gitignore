@@ -343,3 +343,4 @@ healthchecksdb
 /sdkconfig.old
 /out
 *.orig
+/.vscode
