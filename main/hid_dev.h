@@ -138,6 +138,17 @@ extern "C" {
 #define HID_KEY_RIGHT_GUI      231  // Keyboard RightGUI
 typedef uint8_t keyboard_cmd_t;
 
+// HID ÐÞÊÎ¼üÎ»£¨×Ö½Ú0£¬Î»7¨C0£©
+#define LEFT_CONTROL_KEY_MASK        (1 << 0)
+#define LEFT_SHIFT_KEY_MASK          (1 << 1)
+#define LEFT_ALT_KEY_MASK            (1 << 2)
+#define LEFT_GUI_KEY_MASK            (1 << 3)
+#define RIGHT_CONTROL_KEY_MASK       (1 << 4)
+#define RIGHT_SHIFT_KEY_MASK         (1 << 5)
+#define RIGHT_ALT_KEY_MASK           (1 << 6)
+#define RIGHT_GUI_KEY_MASK           (1 << 7)
+typedef uint8_t key_mask_t;
+
 #define HID_MOUSE_LEFT       253
 #define HID_MOUSE_MIDDLE     254
 #define HID_MOUSE_RIGHT      255
@@ -247,9 +258,9 @@ void hid_dev_send_report(esp_gatt_if_t gatts_if, uint16_t conn_id,
 
 void hid_consumer_build_report(uint8_t *buffer, consumer_cmd_t cmd);
 
-void hid_keyboard_build_report(uint8_t *buffer, keyboard_cmd_t cmd);
+//void hid_keyboard_build_report(uint8_t *buffer, keyboard_cmd_t cmd);
 
-void hid_mouse_build_report(uint8_t *buffer, mouse_cmd_t cmd);
+//void hid_mouse_build_report(uint8_t *buffer, mouse_cmd_t cmd);
 
 #endif /* HID_DEV_H__ */
 

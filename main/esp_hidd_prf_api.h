@@ -35,18 +35,6 @@ extern "C" {
 // HID consumer control input report length
 #define HID_CC_IN_RPT_LEN           2
 
-#define LEFT_CONTROL_KEY_MASK        (1 << 0)
-#define LEFT_SHIFT_KEY_MASK          (1 << 1)
-#define LEFT_ALT_KEY_MASK            (1 << 2)
-#define LEFT_GUI_KEY_MASK            (1 << 3)
-#define RIGHT_CONTROL_KEY_MASK       (1 << 4)
-#define RIGHT_SHIFT_KEY_MASK         (1 << 5)
-#define RIGHT_ALT_KEY_MASK           (1 << 6)
-#define RIGHT_GUI_KEY_MASK           (1 << 7)
-
-typedef uint8_t key_mask_t;
-
-
 typedef enum {
     ESP_HIDD_EVENT_REG_FINISH = 0,
     ESP_BAT_EVENT_REG,
