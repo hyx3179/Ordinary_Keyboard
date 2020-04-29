@@ -108,23 +108,23 @@ const uint16_t char2key[] = { /**< 字符与键值对应表 */
 
 void post_item(uint8_t *key_vaule)
 {
-    //extern xQueueHandle keyboard_queue;
+    extern xQueueHandle keyboard_queue;
     ESP_LOGI(KM_TAG, "the key vaule = %d, %d, %d, %d, %d, %d, %d, %d", key_vaule[0],
              key_vaule[1], key_vaule[2], key_vaule[3], key_vaule[4], key_vaule[5], key_vaule[6], key_vaule[7]);
-    //xQueueSendToBack(keyboard_queue, key_vaule, 0);
-    memset(key_vaule, 0, KEY_VAULE_LEN);
-    //xQueueSendToBack(keyboard_queue, key_vaule, 0);
+    xQueueSendToBack(keyboard_queue, key_vaule, 0);
+    memset(key_vaule, 0, HID_KEYBOARD_IN_RPT_LEN);
+    xQueueSendToBack(keyboard_queue, key_vaule, 0);
 }
 
 int STR_cmd_handle(uint8_t *str)
 {
-    ESP_LOGD(KM_TAG, "STR_cmd_handle(%s)", str);
-    uint8_t key_vaule[KEY_VAULE_LEN];
-    memset(&key_vaule, 0, KEY_VAULE_LEN);
+    //ESP_LOGD(KM_TAG, "STR_cmd_handle(%s)", str);
+    uint8_t key_vaule[HID_KEYBOARD_IN_RPT_LEN];
+    memset(&key_vaule, 0, HID_KEYBOARD_IN_RPT_LEN);
     bool lowercase = false, capital = false;
 
     for (int i = 0, n = 2;; i++) {
-        if (n == 8) {
+        if (n == HID_KEYBOARD_IN_RPT_LEN) {
             post_item(key_vaule);
             n = 2;
         }
@@ -132,9 +132,9 @@ int STR_cmd_handle(uint8_t *str)
         case 0:
             post_item(key_vaule);
             return i;
-        //case '\\':
-        //    post_item(key_vaule);
-        //    return i - 1;
+        case '\\':
+            post_item(key_vaule);
+            return i - 1;
         default:
             if (KEY_MAP(str[i]) > 255) {
                 if (n > 2 && lowercase) {
@@ -175,11 +175,11 @@ int STR_cmd_handle(uint8_t *str)
 
 esp_err_t keyboard_macro_handle(uint8_t *macro, int len)
 {
-    uint8_t key_vaule[KEY_VAULE_LEN];
-    memset(&key_vaule, 0, KEY_VAULE_LEN);
+    uint8_t key_vaule[HID_KEYBOARD_IN_RPT_LEN];
+    memset(&key_vaule, 0, HID_KEYBOARD_IN_RPT_LEN);
 
     for (int i = 0, n = 2; i < len; i++) {
-        if (n == 8) {
+        if (n == HID_KEYBOARD_IN_RPT_LEN) {
             return ESP_ERR_INVALID_ARG;
         }
         switch ((macro[i] << 16) + (macro[i + 1] << 8) + macro[i + 2]) {
@@ -248,13 +248,13 @@ esp_err_t keyboard_macro_handle(uint8_t *macro, int len)
             if (i == 0) {
                 return ESP_ERR_INVALID_ARG;
             }
-            //if (macro[i] == '\\') {
-            //    key_vaule[2] = KEY_MAP('\\');
-            //    post_item(key_vaule);
-            //    i++;
-            //    i += STR_cmd_handle(&macro[i]);
-            //    break;
-            //}
+            if (macro[i] == '\\') {
+                key_vaule[2] = KEY_MAP('\\');
+                post_item(key_vaule);
+                i++;
+                i += STR_cmd_handle(&macro[i]);
+                break;
+            }
             key_vaule[n] = KEY_MAP(macro[i]);
             n++;
         }

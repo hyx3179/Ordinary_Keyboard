@@ -1,7 +1,6 @@
 
 #define KM_TAG  "KM"
 #define KEY_MAP(KEY) char2key[KEY-32]
-#define KEY_VAULE_LEN 8
 
 // ºêÃüÁî
 // ASCIIÂë²»¿ÉÏÔÊ¾×Ö·û
