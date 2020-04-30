@@ -138,7 +138,7 @@ extern "C" {
 #define HID_KEY_RIGHT_GUI      231  // Keyboard RightGUI
 typedef uint8_t keyboard_cmd_t;
 
-// HID ĞŞÊÎ¼üÎ»£¨×Ö½Ú0£¬Î»7¨C0£©
+// HID ä¿®é¥°é”®ä½ï¼ˆå­—èŠ‚0ï¼Œä½7â€“0ï¼‰
 #define LEFT_CONTROL_KEY_MASK        (1 << 0)
 #define LEFT_SHIFT_KEY_MASK          (1 << 1)
 #define LEFT_ALT_KEY_MASK            (1 << 2)

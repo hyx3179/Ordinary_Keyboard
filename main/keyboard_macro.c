@@ -7,8 +7,8 @@
 #include "keyboard_macro.h"
 #include "hid_dev.h"
 
-const uint16_t char2key[] = { /**< ×Ö·ûÓë¼üÖµ¶ÔÓ¦±í */
-    //¼üÖµ                                                   ¶þ         Ê®   Ê®Áù   Í¼ÐÎ
+const uint16_t char2key[] = { /**< å­—ç¬¦ä¸Žé”®å€¼å¯¹åº”è¡¨ */
+    //é”®å€¼                                                   äºŒ         å   åå…­   å›¾å½¢
     HID_KEY_SPACEBAR,                                //    00100000     32    20    " "
     HID_KEY_1 + (LEFT_SHIFT_KEY_MASK << 8),          //    00100001     33    21    "!"
     HID_KEY_SGL_QUOTE + (LEFT_SHIFT_KEY_MASK << 8),  //    00100010     34    22    """
