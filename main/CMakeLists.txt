@@ -1,6 +1,7 @@
 idf_component_register(SRCS "Ordinary_Keyboard_main.c"
                             "configure_server.c"
                             "keyboard_macro.c"
+                            "wifi_connect.c"
                             "start_ble_hid_server.c"
                             "esp_hidd_prf_api.c"
                             "hid_dev.c"

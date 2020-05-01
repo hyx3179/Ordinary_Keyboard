@@ -4,20 +4,14 @@
 #include "nvs_flash.h"
 #include "esp_log.h"
 
-#include <sys/param.h>
-
-#include "esp_wifi.h"
 #include "esp_event.h"
-#include "esp_log.h"
-#include "esp_system.h"
 #include "esp_spiffs.h"
 #include "esp_netif.h"
-#include "protocol_examples_common.h"
 
 #include "esp_hidd_prf_api.h"
-#include "keyboard_macro.h"
+#include "Ordinary_Keyboard_main.h"
 
-#define TAG "example"
+#define TAG "main"
 
 extern uint16_t hid_conn_id;
 extern bool sec_conn;
@@ -65,7 +59,7 @@ static esp_err_t init_spiffs(void)
     esp_vfs_spiffs_conf_t conf = {
         .base_path = "/spiffs",
         .partition_label = NULL,
-        .max_files = 50,   // This decides the maximum number of files that can be created on the storage
+        .max_files = 50,   // 这决定了可在存储上创建的最大文件数
         .format_if_mount_failed = true
     };
 
@@ -92,9 +86,6 @@ static esp_err_t init_spiffs(void)
     return ESP_OK;
 }
 
-esp_err_t start_ble_hid_server();
-esp_err_t configure_server(const char *base_path);
-
 void app_main(void)
 {
     esp_err_t ret;
@@ -107,14 +98,9 @@ void app_main(void)
     }
     ESP_ERROR_CHECK(ret);
 
-    ESP_ERROR_CHECK(esp_netif_init());
-    ESP_ERROR_CHECK(esp_event_loop_create_default());
+    uint8_t myssid[] = "ROOT", mypassword[] = "root201314";
 
-    /* This helper function configures Wi-Fi or Ethernet, as selected in menuconfig.
-     * Read "Establishing Wi-Fi or Ethernet Connection" section in
-     * examples/protocols/README.md for more information about this function.
-     */
-    ESP_ERROR_CHECK(example_connect());
+    wifi_connect(FAST_SCAN, &myssid[0], &mypassword[0]);
 
     /* Initialize file storage */
     ESP_ERROR_CHECK(init_spiffs());

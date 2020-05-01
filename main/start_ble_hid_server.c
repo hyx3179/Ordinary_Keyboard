@@ -7,12 +7,12 @@
 #include <string.h>
 #include "esp_log.h"
 #include "esp_bt.h"
+#include "esp_bt_main.h"
 
 #include "esp_hidd_prf_api.h"
-#include "esp_bt_main.h"
 #include "hid_dev.h"
 
-#define HID_TAG               "HID"
+#define TAG               "start_ble_hid_server"
 #define HIDD_DEVICE_NAME      "OK"
 
 uint16_t hid_conn_id = 0;
@@ -64,17 +64,17 @@ static void hidd_event_callback(esp_hidd_cb_event_t event, esp_hidd_cb_param_t *
     case ESP_HIDD_EVENT_DEINIT_FINISH:
         break;
     case ESP_HIDD_EVENT_BLE_CONNECT:
-        ESP_LOGI(HID_TAG, "ESP_HIDD_EVENT_BLE_CONNECT");
+        ESP_LOGI(TAG, "ESP_HIDD_EVENT_BLE_CONNECT");
         hid_conn_id = param->connect.conn_id;
         break;
     case ESP_HIDD_EVENT_BLE_DISCONNECT:
         sec_conn = false;
-        ESP_LOGI(HID_TAG, "ESP_HIDD_EVENT_BLE_DISCONNECT");
+        ESP_LOGI(TAG, "ESP_HIDD_EVENT_BLE_DISCONNECT");
         esp_ble_gap_start_advertising(&hidd_adv_params);
         break;
     case ESP_HIDD_EVENT_BLE_VENDOR_REPORT_WRITE_EVT:
-        ESP_LOGI(HID_TAG, "%s, ESP_HIDD_EVENT_BLE_VENDOR_REPORT_WRITE_EVT", __func__);
-        ESP_LOG_BUFFER_HEX(HID_TAG, param->vendor_write.data, param->vendor_write.length);
+        ESP_LOGI(TAG, "%s, ESP_HIDD_EVENT_BLE_VENDOR_REPORT_WRITE_EVT", __func__);
+        ESP_LOG_BUFFER_HEX(TAG, param->vendor_write.data, param->vendor_write.length);
     default:
         break;
     }
@@ -89,7 +89,7 @@ static void gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param
         break;
     case ESP_GAP_BLE_SEC_REQ_EVT:
         for (int i = 0; i < ESP_BD_ADDR_LEN; i++) {
-            ESP_LOGD(HID_TAG, "%x:", param->ble_security.ble_req.bd_addr[i]);
+            ESP_LOGD(TAG, "%x:", param->ble_security.ble_req.bd_addr[i]);
         }
         esp_ble_gap_security_rsp(param->ble_security.ble_req.bd_addr, true);
         break;
@@ -97,13 +97,13 @@ static void gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param
         sec_conn = true;
         esp_bd_addr_t bd_addr;
         memcpy(bd_addr, param->ble_security.auth_cmpl.bd_addr, sizeof(esp_bd_addr_t));
-        ESP_LOGI(HID_TAG, "remote BD_ADDR: %08x%04x",
+        ESP_LOGI(TAG, "remote BD_ADDR: %08x%04x",
                  (bd_addr[0] << 24) + (bd_addr[1] << 16) + (bd_addr[2] << 8) + bd_addr[3],
                  (bd_addr[4] << 8) + bd_addr[5]);
-        ESP_LOGI(HID_TAG, "address type = %d", param->ble_security.auth_cmpl.addr_type);
-        ESP_LOGI(HID_TAG, "pair status = %s", param->ble_security.auth_cmpl.success ? "success" : "fail");
+        ESP_LOGI(TAG, "address type = %d", param->ble_security.auth_cmpl.addr_type);
+        ESP_LOGI(TAG, "pair status = %s", param->ble_security.auth_cmpl.success ? "success" : "fail");
         if (!param->ble_security.auth_cmpl.success) {
-            ESP_LOGE(HID_TAG, "fail reason = 0x%x", param->ble_security.auth_cmpl.fail_reason);
+            ESP_LOGE(TAG, "fail reason = 0x%x", param->ble_security.auth_cmpl.fail_reason);
         }
         break;
     default:

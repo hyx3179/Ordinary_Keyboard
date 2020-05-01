@@ -4,8 +4,11 @@
 #include "esp_log.h"
 
 #include "esp_hidd_prf_api.h"
-#include "keyboard_macro.h"
 #include "hid_dev.h"
+#include "Ordinary_Keyboard_main.h"
+
+#define KM_TAG  "KM"
+#define KEY_MAP(KEY) char2key[KEY-32]
 
 const uint16_t char2key[] = { /**< 字符与键值对应表 */
     //键值                                                   二         十   十六   图形
