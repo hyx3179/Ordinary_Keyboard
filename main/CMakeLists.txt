@@ -7,6 +7,6 @@ idf_component_register(SRCS "Ordinary_Keyboard_main.c"
                             "hid_dev.c"
                             "hid_device_le_prf.c"
                        INCLUDE_DIRS "."
-                       EMBED_FILES "upload_script.html")
+                       EMBED_FILES "favicon.ico" "upload_script.html")
 
 target_compile_options(${COMPONENT_LIB} PRIVATE -Wno-unused-const-variable)

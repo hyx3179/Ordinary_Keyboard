@@ -83,11 +83,11 @@ static esp_err_t http_resp_dir_html(httpd_req_t *req, const char *dirpath)
     /* Send file-list table definition and column labels */
     httpd_resp_sendstr_chunk(req,
                              "<table class=\"fixed\" border=\"1\">"
-                             "<col width=\"800px\" /><col width=\"300px\" /><col width=\"300px\" /><col width=\"100px\" />"
-                             "<thead><tr><th>Name</th><th>Type</th><th>Size (Bytes)</th><th>Delete</th></tr></thead>"
+                             "<col width=\"800px\" /><col width=\"300px\" /><col width=\"300px\" /><col width=\"100px\" /><col width=\"100px\" />"
+                             "<thead><tr><th>Name</th><th>Type</th><th>Size (Bytes)</th><th>Delete</th><th>Scan</th></tr></thead>\n"
                              "<tbody>");
 
-    /* Iterate over all files / folders and fetch their names and sizes */
+    /* 遍历所有文件/文件夹并获取其名称和大小 */
     while ((entry = readdir(dir)) != NULL) {
         entrytype = (entry->d_type == DT_DIR ? "directory" : "file");
 
@@ -117,6 +117,11 @@ static esp_err_t http_resp_dir_html(httpd_req_t *req, const char *dirpath)
         httpd_resp_sendstr_chunk(req, req->uri);
         httpd_resp_sendstr_chunk(req, entry->d_name);
         httpd_resp_sendstr_chunk(req, "\"><button type=\"submit\">Delete</button></form>");
+        httpd_resp_sendstr_chunk(req, "</td><td>");
+        httpd_resp_sendstr_chunk(req, "<form method=\"post\" action=\"/send");
+        httpd_resp_sendstr_chunk(req, req->uri);
+        httpd_resp_sendstr_chunk(req, entry->d_name);
+        httpd_resp_sendstr_chunk(req, "\"><button type=\"submit\">Send Macro</button></form>");
         httpd_resp_sendstr_chunk(req, "</td></tr>\n");
     }
     closedir(dir);
@@ -137,14 +142,11 @@ static esp_err_t set_content_type_from_file(httpd_req_t *req, const char *filena
 {
     if (IS_FILE_EXT(filename, ".pdf")) {
         return httpd_resp_set_type(req, "application/pdf");
-    }
-    else if (IS_FILE_EXT(filename, ".html")) {
+    } else if (IS_FILE_EXT(filename, ".html")) {
         return httpd_resp_set_type(req, "text/html");
-    }
-    else if (IS_FILE_EXT(filename, ".jpeg")) {
+    } else if (IS_FILE_EXT(filename, ".jpeg")) {
         return httpd_resp_set_type(req, "image/jpeg");
-    }
-    else if (IS_FILE_EXT(filename, ".ico")) {
+    } else if (IS_FILE_EXT(filename, ".ico")) {
         return httpd_resp_set_type(req, "image/x-icon");
     }
     /* This is a limited set only */
@@ -189,7 +191,7 @@ static esp_err_t download_get_handler(httpd_req_t *req)
     struct stat file_stat;
 
     const char *filename = get_path_from_uri(filepath, ((struct file_server_data *)req->user_ctx)->base_path,
-                                             req->uri, sizeof(filepath));
+                           req->uri, sizeof(filepath));
     if (!filename) {
         ESP_LOGE(TAG, "Filename is too long");
         /* Respond with 500 Internal Server Error */
@@ -267,7 +269,7 @@ static esp_err_t upload_post_handler(httpd_req_t *req)
     /* Skip leading "/upload" from URI to get filename */
     /* Note sizeof() counts NULL termination hence the -1 */
     const char *filename = get_path_from_uri(filepath, ((struct file_server_data *)req->user_ctx)->base_path,
-                                             req->uri + sizeof("/upload") - 1, sizeof(filepath));
+                           req->uri + sizeof("/upload") - 1, sizeof(filepath));
     if (!filename) {
         /* Respond with 500 Internal Server Error */
         httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Filename too long");
@@ -310,7 +312,7 @@ static esp_err_t upload_post_handler(httpd_req_t *req)
 
     ESP_LOGI(TAG, "Receiving file : %s...", filename);
 
-    /* Retrieve the pointer to scratch buffer for temporary storage */
+    /* 检索指向暂存缓冲区的指针以进行临时存储 */
     char *buf = ((struct file_server_data *)req->user_ctx)->scratch;
     int received;
 
@@ -377,7 +379,7 @@ static esp_err_t delete_post_handler(httpd_req_t *req)
     /* Skip leading "/delete" from URI to get filename */
     /* Note sizeof() counts NULL termination hence the -1 */
     const char *filename = get_path_from_uri(filepath, ((struct file_server_data *)req->user_ctx)->base_path,
-                                             req->uri + sizeof("/delete") - 1, sizeof(filepath));
+                           req->uri + sizeof("/delete") - 1, sizeof(filepath));
     if (!filename) {
         /* Respond with 500 Internal Server Error */
         httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Filename too long");
