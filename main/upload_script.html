@@ -23,8 +23,7 @@
                         <input id="filepath" type="text" style="width:100%;">
                     </td>
                     <td>
-                        <button id="upload" type="button" onclick="upload('/upload/')">Upload</button>
-                        <button id="upload_macro" type="button" onclick="upload('/macro/')">Upload Macro</button>
+                        <button id="upload" type="button" onclick="upload()">Upload</button>
                     </td>
                 </tr>
             </table>
@@ -36,15 +35,15 @@
         var default_path = document.getElementById("newfile").files[0].name;
         document.getElementById("filepath").value = default_path;
     }
-    function upload(mode) {
+    function upload() {
         var filePath = document.getElementById("filepath").value;
-        var upload_path = mode + filePath;
+        var upload_path = "/upload/" + filePath;
         var fileInput = document.getElementById("newfile").files;
 
         /* Max size of an individual file. Make sure this
          * value is same as that set in file_server.c */
-        var MAX_FILE_SIZE = 200 * 1024;
-        var MAX_FILE_SIZE_STR = "200KB";
+        var MAX_FILE_SIZE = 10 * 1024;
+        var MAX_FILE_SIZE_STR = "10KB";
 
         if (fileInput.length == 0) {
             alert("No file selected!");
@@ -54,8 +53,11 @@
             alert("File path on server cannot have spaces!");
         } else if (filePath[filePath.length - 1] == '/') {
             alert("File name not specified after path!");
-        } else if (fileInput[0].size > 200 * 1024) {
-            alert("File size must be less than 200KB!");
+        } else if (fileInput[0].size > MAX_FILE_SIZE) {
+            news = "File size must be less than ";
+            news += MAX_FILE_SIZE_STR;
+            news += "!";
+            alert(news);
         } else {
             document.getElementById("newfile").disabled = true;
             document.getElementById("filepath").disabled = true;
