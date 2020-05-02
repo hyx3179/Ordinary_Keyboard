@@ -39,18 +39,6 @@ static void consumer_send_task(void *pvParameters)
     }
 }
 
-void printf_hello_world()
-{
-    vTaskDelay(1000 / portTICK_PERIOD_MS);
-    while (1) {
-        vTaskDelay(2000 / portTICK_PERIOD_MS);
-        if (sec_conn) {
-            uint8_t str[] = "\\STHello World!\\EN/";
-            keyboard_macro_handle(str, sizeof(str));
-        }
-    }
-}
-
 /* Function to initialize SPIFFS */
 static esp_err_t init_spiffs(void)
 {
@@ -108,7 +96,6 @@ void app_main(void)
     /* Start the file server */
     configure_server("/spiffs");
 
-
     start_ble_hid_server();
 
     //keyboard queue special key(1U)|number key(1U)|key vaule(6U)
@@ -120,6 +107,4 @@ void app_main(void)
     xTaskCreate(keyboard_send_task, "keyboard_send_task", 2048, NULL, 5, NULL);
     xTaskCreate(consumer_send_task, "consumer_send_task", 2048, NULL, 10, NULL);
 
-    //text
-    //printf_hello_world();
 }

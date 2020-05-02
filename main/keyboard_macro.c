@@ -112,7 +112,7 @@ const uint16_t char2key[] = { /**< 字符与键值对应表 */
 void post_item(uint8_t *key_vaule)
 {
     extern xQueueHandle keyboard_queue;
-    ESP_LOGI(KM_TAG, "the key vaule = %d, %d, %d, %d, %d, %d, %d, %d", key_vaule[0],
+    ESP_LOGD(KM_TAG, "the key vaule = %d, %d, %d, %d, %d, %d, %d, %d", key_vaule[0],
              key_vaule[1], key_vaule[2], key_vaule[3], key_vaule[4], key_vaule[5], key_vaule[6], key_vaule[7]);
     xQueueSendToBack(keyboard_queue, key_vaule, 0);
     memset(key_vaule, 0, HID_KEYBOARD_IN_RPT_LEN);

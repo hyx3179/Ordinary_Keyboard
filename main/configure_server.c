@@ -11,6 +11,9 @@
 #include "esp_spiffs.h"
 #include "esp_http_server.h"
 
+#include "esp_hidd_prf_api.h"
+#include "Ordinary_Keyboard_main.h"
+
 #define TAG "configure_server"
 
 #define FILE_PATH_MAX (ESP_VFS_PATH_MAX + CONFIG_SPIFFS_OBJ_NAME_LEN)
@@ -40,6 +43,19 @@ static esp_err_t index_html_get_handler(httpd_req_t *req)
     httpd_resp_set_status(req, "307 Temporary Redirect");
     httpd_resp_set_hdr(req, "Location", "/");
     httpd_resp_send(req, NULL, 0);  // 响应主体可以为空
+    return ESP_OK;
+}
+
+/* 处理程序以嵌入在Flash中的图标文件作为响应。
+ * 浏览器希望在URI /favicon.ico 上获取GET网站图标。
+ * 可以通过上传具有相同名称的文件来覆盖 */
+static esp_err_t favicon_get_handler(httpd_req_t *req)
+{
+    extern const unsigned char favicon_ico_start[] asm("_binary_favicon_ico_start");
+    extern const unsigned char favicon_ico_end[]   asm("_binary_favicon_ico_end");
+    const size_t favicon_ico_size = (favicon_ico_end - favicon_ico_start);
+    httpd_resp_set_type(req, "image/x-icon");
+    httpd_resp_send(req, (const char *)favicon_ico_start, favicon_ico_size);
     return ESP_OK;
 }
 
@@ -209,6 +225,8 @@ static esp_err_t download_get_handler(httpd_req_t *req)
          * corresponds to one of the hardcoded paths */
         if (strcmp(filename, "/index.html") == 0) {
             return index_html_get_handler(req);
+        } else if (strcmp(filename, "/favicon.ico") == 0) {
+            return favicon_get_handler(req);
         }
         ESP_LOGE(TAG, "Failed to stat file : %s", filepath);
         /* Respond with 404 Not Found */
@@ -411,6 +429,79 @@ static esp_err_t delete_post_handler(httpd_req_t *req)
     return ESP_OK;
 }
 
+static esp_err_t upload_macro_handler(httpd_req_t *req)
+{
+    ESP_LOGI(TAG, "upload_macro_handler");
+
+    httpd_resp_set_status(req, "303 See Other");
+    httpd_resp_set_hdr(req, "Location", "/");
+    httpd_resp_sendstr(req, "Macro uploaded successfully");
+    return ESP_OK;
+}
+
+static esp_err_t send_macro_handler(httpd_req_t *req)
+{
+    char filepath[FILE_PATH_MAX];
+    FILE *fd = NULL;
+    struct stat file_stat;
+
+    const char *filename = get_path_from_uri(filepath, ((struct file_server_data *)req->user_ctx)->base_path,
+                           req->uri + sizeof("/send") - 1, sizeof(filepath));
+    if (!filename) {
+        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Filename too long");
+        return ESP_FAIL;
+    }
+
+    /* Filename cannot have a trailing '/' */
+    if (filename[strlen(filename) - 1] == '/') {
+        ESP_LOGE(TAG, "Invalid filename : %s", filename);
+        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Invalid filename");
+        return ESP_FAIL;
+    }
+
+    if (stat(filepath, &file_stat) == -1) {
+        ESP_LOGE(TAG, "unknown error");
+        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "unknown error");
+        return ESP_FAIL;
+    }
+
+    fd = fopen(filepath, "r");
+    if (!fd) {
+        ESP_LOGE(TAG, "Failed to open file : %s", filepath);
+        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to open file");
+        return ESP_FAIL;
+    }
+
+    ESP_LOGI(TAG, "Send macro : %s...", filename);
+
+    int remaining = file_stat.st_size;
+
+    while (remaining > 0) {
+        ESP_LOGD(TAG, "Remaining size : %d", remaining);
+
+        uint8_t key_vaule[HID_KEYBOARD_IN_RPT_LEN];
+
+        if (HID_KEYBOARD_IN_RPT_LEN != fread(key_vaule, 1, HID_KEYBOARD_IN_RPT_LEN, fd)) {
+            ESP_LOGE(TAG, "File error!");
+            httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "File error!");
+            fclose(fd);
+            return ESP_FAIL;
+        }
+
+        post_item(key_vaule);
+
+        remaining -= HID_KEYBOARD_IN_RPT_LEN;
+    }
+
+    fclose(fd);
+    ESP_LOGI(TAG, "Macro sended successfully");
+
+    httpd_resp_set_status(req, "303 See Other");
+    httpd_resp_set_hdr(req, "Location", "/");
+    httpd_resp_sendstr(req, "Macro sended successfully");
+    return ESP_OK;
+}
+
 /* Function to start the file server */
 esp_err_t configure_server(const char *base_path)
 {
@@ -476,6 +567,22 @@ esp_err_t configure_server(const char *base_path)
         .user_ctx = server_data    // Pass server data as context
     };
     httpd_register_uri_handler(server, &file_delete);
+
+    httpd_uri_t upload_macro = {
+        .uri = "/macro/*",
+        .method = HTTP_POST,
+        .handler = upload_macro_handler,
+        .user_ctx = server_data
+    };
+    httpd_register_uri_handler(server, &upload_macro);
+
+    httpd_uri_t send_macro = {
+        .uri = "/send/*",
+        .method = HTTP_POST,
+        .handler = send_macro_handler,
+        .user_ctx = server_data
+    };
+    httpd_register_uri_handler(server, &send_macro);
 
     return ESP_OK;
 }
