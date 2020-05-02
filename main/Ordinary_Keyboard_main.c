@@ -1,3 +1,4 @@
+#include <string.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/queue.h"
@@ -18,6 +19,16 @@ extern bool sec_conn;
 
 xQueueHandle keyboard_queue = NULL;
 xQueueHandle consumer_queue = NULL;
+
+void post_item(uint8_t *key_vaule)
+{
+    ESP_LOGD(TAG, "the key vaule = %d, %d, %d, %d, %d, %d, %d, %d", key_vaule[0],
+             key_vaule[1], key_vaule[2], key_vaule[3], key_vaule[4], key_vaule[5], key_vaule[6], key_vaule[7]);
+    extern xQueueHandle keyboard_queue;
+    xQueueSendToBack(keyboard_queue, key_vaule, 0);
+    memset(key_vaule, 0, HID_KEYBOARD_IN_RPT_LEN);
+    xQueueSendToBack(keyboard_queue, key_vaule, 0);
+}
 
 static void keyboard_send_task(void *pvParameters)
 {
@@ -88,7 +99,7 @@ void app_main(void)
 
     uint8_t myssid[] = "ROOT", mypassword[] = "root201314";
 
-    wifi_connect(FAST_SCAN, &myssid[0], &mypassword[0]);
+    wifi_connect(FAST_SCAN, myssid, mypassword);
 
     /* Initialize file storage */
     ESP_ERROR_CHECK(init_spiffs());
@@ -99,7 +110,7 @@ void app_main(void)
     start_ble_hid_server();
 
     //keyboard queue special key(1U)|number key(1U)|key vaule(6U)
-    keyboard_queue = xQueueCreate(10, 8U);
+    keyboard_queue = xQueueCreate(1024, HID_KEYBOARD_IN_RPT_LEN);
 
     //consumer queue Consumer key(1U)|key pressed(1U)
     consumer_queue = xQueueCreate(10, 2U);

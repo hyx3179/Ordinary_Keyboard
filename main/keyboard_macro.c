@@ -7,10 +7,10 @@
 #include "hid_dev.h"
 #include "Ordinary_Keyboard_main.h"
 
-#define KM_TAG  "KM"
+#define TAG  "KM"
 #define KEY_MAP(KEY) char2key[KEY-32]
 
-const uint16_t char2key[] = { /**< 字符与键值对应表 */
+static const uint16_t char2key[] = { /**< 字符与键值对应表 */
     //键值                                                   二         十   十六   图形
     HID_KEY_SPACEBAR,                                //    00100000     32    20    " "
     HID_KEY_1 + (LEFT_SHIFT_KEY_MASK << 8),          //    00100001     33    21    "!"
@@ -109,39 +109,47 @@ const uint16_t char2key[] = { /**< 字符与键值对应表 */
     HID_KEY_GRV_ACCENT + (LEFT_SHIFT_KEY_MASK << 8)  //    01111110    126    7E    "~"
 };
 
-void post_item(uint8_t *key_vaule)
+static esp_err_t build_macro(uint8_t *key_vaule, FILE *fd)
 {
-    extern xQueueHandle keyboard_queue;
-    ESP_LOGD(KM_TAG, "the key vaule = %d, %d, %d, %d, %d, %d, %d, %d", key_vaule[0],
+    ESP_LOGD(TAG, "the key vaule = %d, %d, %d, %d, %d, %d, %d, %d", key_vaule[0],
              key_vaule[1], key_vaule[2], key_vaule[3], key_vaule[4], key_vaule[5], key_vaule[6], key_vaule[7]);
-    xQueueSendToBack(keyboard_queue, key_vaule, 0);
+    if (HID_KEYBOARD_IN_RPT_LEN != fwrite(key_vaule, 1, HID_KEYBOARD_IN_RPT_LEN, fd)) {
+        memset(key_vaule, 0, HID_KEYBOARD_IN_RPT_LEN);
+        return ESP_FAIL;
+    }
     memset(key_vaule, 0, HID_KEYBOARD_IN_RPT_LEN);
-    xQueueSendToBack(keyboard_queue, key_vaule, 0);
+    return ESP_OK;
 }
 
-int STR_cmd_handle(uint8_t *str)
+/**
+ * @brief  字符串命令处理
+ * @param  str: 字符串的指针
+ * @param  fb: 宏文件指针
+ * @return 处理字符数量
+ */
+static int STR_cmd_handle(uint8_t *str, FILE *fd)
 {
-    //ESP_LOGD(KM_TAG, "STR_cmd_handle(%s)", str);
+    ESP_LOGD(TAG, "STR : %s", str);
     uint8_t key_vaule[HID_KEYBOARD_IN_RPT_LEN];
     memset(&key_vaule, 0, HID_KEYBOARD_IN_RPT_LEN);
     bool lowercase = false, capital = false;
 
     for (int i = 0, n = 2;; i++) {
         if (n == HID_KEYBOARD_IN_RPT_LEN) {
-            post_item(key_vaule);
+            build_macro(key_vaule, fd);
             n = 2;
         }
         switch (str[i]) {
         case 0:
-            post_item(key_vaule);
+            build_macro(key_vaule, fd);
             return i;
         case '\\':
-            post_item(key_vaule);
+            build_macro(key_vaule, fd);
             return i - 1;
         default:
             if (KEY_MAP(str[i]) > 255) {
                 if (n > 2 && lowercase) {
-                    post_item(key_vaule);
+                    build_macro(key_vaule, fd);
                     lowercase = false;
                     n = 2;
                 }
@@ -151,13 +159,13 @@ int STR_cmd_handle(uint8_t *str)
                 capital = true;
                 if (key_vaule[n - 2] == key_vaule[n - 1]) {
                     key_vaule[n - 1] = 0;
-                    post_item(key_vaule);
+                    build_macro(key_vaule, fd);
                     n = 2;
                     i--;
                 }
             } else {
                 if (n > 2 && capital) {
-                    post_item(key_vaule);
+                    build_macro(key_vaule, fd);
                     capital = false;
                     n = 2;
                 }
@@ -166,7 +174,7 @@ int STR_cmd_handle(uint8_t *str)
                 lowercase = true;
                 if (key_vaule[n - 2] == key_vaule[n - 1]) {
                     key_vaule[n - 1] = 0;
-                    post_item(key_vaule);
+                    build_macro(key_vaule, fd);
                     n = 2;
                     i--;
                 }
@@ -176,8 +184,9 @@ int STR_cmd_handle(uint8_t *str)
     }
 }
 
-esp_err_t keyboard_macro_handle(uint8_t *macro, int len)
+esp_err_t keyboard_macro_handle(uint8_t *macro, int len, FILE *fd)
 {
+    ESP_LOGD(TAG, "MACRO : %s", macro);
     uint8_t key_vaule[HID_KEYBOARD_IN_RPT_LEN];
     memset(&key_vaule, 0, HID_KEYBOARD_IN_RPT_LEN);
 
@@ -188,7 +197,7 @@ esp_err_t keyboard_macro_handle(uint8_t *macro, int len)
         switch ((macro[i] << 16) + (macro[i + 1] << 8) + macro[i + 2]) {
         case STR:
             i += 3;
-            i += STR_cmd_handle(&macro[i]);
+            i += STR_cmd_handle(&macro[i], fd);
             break;
         case ESCAPE:
             key_vaule[n] = HID_KEY_ESCAPE;
@@ -253,16 +262,16 @@ esp_err_t keyboard_macro_handle(uint8_t *macro, int len)
             }
             if (macro[i] == '\\') {
                 key_vaule[2] = KEY_MAP('\\');
-                post_item(key_vaule);
+                build_macro(key_vaule, fd);
                 i++;
-                i += STR_cmd_handle(&macro[i]);
+                i += STR_cmd_handle(&macro[i], fd);
                 break;
             }
             key_vaule[n] = KEY_MAP(macro[i]);
             n++;
         }
         if (macro[i + 1] == '/') {
-            post_item(key_vaule);
+            build_macro(key_vaule, fd);
             i++;
             n = 2;
         }

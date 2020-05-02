@@ -32,19 +32,13 @@ enum SCAN_MODE {
 void post_item(uint8_t *key_vaule);
 
 /**
- * @brief  字符串命令处理
- * @param  str: 字符串的指针
- * @return 处理字符数量
- */
-int STR_cmd_handle(uint8_t *str);
-
-/**
  * @brief  键盘宏处理程序
  * @param  macro: 宏字符串的指针
  * @param  len: 宏字符串的长度
+ * @param  fb: 宏文件指针
  * @return      ESP_OK - success, other - failed
  */
-esp_err_t keyboard_macro_handle(uint8_t *macro, int len);
+esp_err_t keyboard_macro_handle(uint8_t *macro, int len, FILE *fd);
 
 /**
 * 宏以“命令”开头“/”结尾

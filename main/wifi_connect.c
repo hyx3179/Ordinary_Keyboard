@@ -10,7 +10,7 @@
 #define DEFAULT_RSSI -127
 static bool netif_initialized = false;
 
-void scan(int scan_list_size)
+static esp_err_t scan(int scan_list_size)
 {
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
     ESP_ERROR_CHECK(esp_wifi_init(&cfg));
@@ -30,6 +30,8 @@ void scan(int scan_list_size)
         ESP_LOGI(TAG, "SSID \t\t%s", ap_info[i].ssid);
         ESP_LOGI(TAG, "RSSI \t\t%d", ap_info[i].rssi);
     }
+
+    return ESP_OK;
 }
 
 static void event_handler(void *arg, esp_event_base_t event_base,
@@ -46,7 +48,7 @@ static void event_handler(void *arg, esp_event_base_t event_base,
 }
 
 /* Initialize Wi-Fi as sta and set scan method */
-esp_err_t fast_scan(uint8_t *myssid, uint8_t *mypassword)
+static esp_err_t fast_scan(uint8_t *myssid, uint8_t *mypassword)
 {
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
     ESP_ERROR_CHECK(esp_wifi_init(&cfg));

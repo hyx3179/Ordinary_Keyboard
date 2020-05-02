@@ -21,13 +21,20 @@
 #define IS_FILE_EXT(filename, ext) \
     (strcasecmp(&filename[strlen(filename) - sizeof(ext) + 1], ext) == 0)
 
+#define MAXI_TRIGGER_KEY_LENGTH 50
+
+#define TRIGGER_KEY_END 12064 //'/ '
+
 /* 单个文件的最大大小。确保这个
  * 值与 upload_script.html 中设置的值相同 */
-#define MAX_FILE_SIZE   (200*1024) // 200 KB
-#define MAX_FILE_SIZE_STR "200KB"
+#define MAX_FILE_SIZE   (10*1024) // 10 KB
+#define MAX_FILE_SIZE_STR "10KB"
 
 /* 暂存缓冲区大小 */
 #define SCRATCH_BUFSIZE  8192
+
+static const char macro_extension[] = ".macro";
+static const char enabled_macro_extension[] = ".build";
 
 struct file_server_data {
     /* 文件存储的基本路径 */
@@ -99,12 +106,15 @@ static esp_err_t http_resp_dir_html(httpd_req_t *req, const char *dirpath)
     /* Send file-list table definition and column labels */
     httpd_resp_sendstr_chunk(req,
                              "<table class=\"fixed\" border=\"1\">"
-                             "<col width=\"800px\" /><col width=\"300px\" /><col width=\"300px\" /><col width=\"100px\" /><col width=\"100px\" />"
-                             "<thead><tr><th>Name</th><th>Type</th><th>Size (Bytes)</th><th>Delete</th><th>Scan</th></tr></thead>\n"
+                             "<col width=\"800px\" /><col width=\"300px\" /><col width=\"300px\" /><col width=\"100px\" /><col width=\"100px\" /><col width=\"100px\" />\n"
+                             "<thead><tr><th>Name</th><th>Type</th><th>Size (Bytes)</th><th>Delete</th><th>Status</th><th>Send</th></tr></thead>\n"
                              "<tbody>");
 
     /* 遍历所有文件/文件夹并获取其名称和大小 */
     while ((entry = readdir(dir)) != NULL) {
+        if (IS_FILE_EXT(entry->d_name, enabled_macro_extension)) {
+            continue;
+        }
         entrytype = (entry->d_type == DT_DIR ? "directory" : "file");
 
         strlcpy(entrypath + dirpath_len, entry->d_name, sizeof(entrypath) - dirpath_len);
@@ -133,11 +143,45 @@ static esp_err_t http_resp_dir_html(httpd_req_t *req, const char *dirpath)
         httpd_resp_sendstr_chunk(req, req->uri);
         httpd_resp_sendstr_chunk(req, entry->d_name);
         httpd_resp_sendstr_chunk(req, "\"><button type=\"submit\">Delete</button></form>");
-        httpd_resp_sendstr_chunk(req, "</td><td>");
-        httpd_resp_sendstr_chunk(req, "<form method=\"post\" action=\"/send");
-        httpd_resp_sendstr_chunk(req, req->uri);
-        httpd_resp_sendstr_chunk(req, entry->d_name);
-        httpd_resp_sendstr_chunk(req, "\"><button type=\"submit\">Send Macro</button></form>");
+
+        if (IS_FILE_EXT(entry->d_name, macro_extension)) {
+
+            struct stat file_stat;
+            char buildpath[FILE_PATH_MAX] = "/spiffs/";
+            for (int i = 0; i < FILE_PATH_MAX; i++) {
+                if (entry->d_name[i] == 0) {
+                    if (i > FILE_PATH_MAX - 7) {
+                        ESP_LOGE(TAG, "Filename is too long");
+                        /* Respond with 500 Internal Server Error */
+                        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Filename too long");
+                        return ESP_FAIL;
+                    }
+                    memcpy(&buildpath[8], &entry->d_name[0], i);
+                    memcpy(&buildpath[i + 8], enabled_macro_extension, sizeof(enabled_macro_extension));
+                    break;
+                }
+            }
+            if (stat(buildpath, &file_stat) == -1) {
+                httpd_resp_sendstr_chunk(req, "</td><td>");
+                httpd_resp_sendstr_chunk(req, "<form method=\"post\" action=\"/enable");
+                httpd_resp_sendstr_chunk(req, req->uri);
+                httpd_resp_sendstr_chunk(req, entry->d_name);
+                httpd_resp_sendstr_chunk(req, "\"><button type=\"submit\">Disable</button></form>");
+            } else {
+                httpd_resp_sendstr_chunk(req, "</td><td>");
+                httpd_resp_sendstr_chunk(req, "<form method=\"post\" action=\"/delete");
+                httpd_resp_sendstr_chunk(req, req->uri);
+                httpd_resp_sendstr_chunk(req, entry->d_name);
+                httpd_resp_sendstr_chunk(req, enabled_macro_extension);
+                httpd_resp_sendstr_chunk(req, "\"><button type=\"submit\">Enable</button></form>");
+                httpd_resp_sendstr_chunk(req, "</td><td>");
+                httpd_resp_sendstr_chunk(req, "<form method=\"post\" action=\"/send");
+                httpd_resp_sendstr_chunk(req, req->uri);
+                httpd_resp_sendstr_chunk(req, entry->d_name);
+                httpd_resp_sendstr_chunk(req, enabled_macro_extension);
+                httpd_resp_sendstr_chunk(req, "\"><button type=\"submit\">SendMacro</button></form>");
+            }
+        }
         httpd_resp_sendstr_chunk(req, "</td></tr>\n");
     }
     closedir(dir);
@@ -289,6 +333,7 @@ static esp_err_t upload_post_handler(httpd_req_t *req)
     const char *filename = get_path_from_uri(filepath, ((struct file_server_data *)req->user_ctx)->base_path,
                            req->uri + sizeof("/upload") - 1, sizeof(filepath));
     if (!filename) {
+        ESP_LOGE(TAG, "Filename is too long");
         /* Respond with 500 Internal Server Error */
         httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Filename too long");
         return ESP_FAIL;
@@ -399,6 +444,7 @@ static esp_err_t delete_post_handler(httpd_req_t *req)
     const char *filename = get_path_from_uri(filepath, ((struct file_server_data *)req->user_ctx)->base_path,
                            req->uri + sizeof("/delete") - 1, sizeof(filepath));
     if (!filename) {
+        ESP_LOGE(TAG, "Filename is too long");
         /* Respond with 500 Internal Server Error */
         httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Filename too long");
         return ESP_FAIL;
@@ -429,13 +475,80 @@ static esp_err_t delete_post_handler(httpd_req_t *req)
     return ESP_OK;
 }
 
-static esp_err_t upload_macro_handler(httpd_req_t *req)
+static esp_err_t enable_macro_handler(httpd_req_t *req)
 {
-    ESP_LOGI(TAG, "upload_macro_handler");
+    char filepath[FILE_PATH_MAX];
+    FILE *fd = NULL;
+    struct stat file_stat;
+
+    /* Skip leading "/enable" from URI to get filename */
+    /* Note sizeof() counts NULL termination hence the -1 */
+    const char *filename = get_path_from_uri(filepath, ((struct file_server_data *)req->user_ctx)->base_path,
+                           req->uri + sizeof("/enable") - 1, sizeof(filepath));
+
+    if (stat(filepath, &file_stat) == -1) {
+        ESP_LOGE(TAG, "unknown error");
+        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "unknown error");
+        return ESP_FAIL;
+    }
+
+    /*创建文件缓冲区，补充 NULL 表示字符串终止*/
+    uint8_t file_buffer[file_stat.st_size + 1];
+    memset(file_buffer, 0, file_stat.st_size + 1);
+    /*创建触发键缓冲区*/
+    uint8_t trigger_buffer[MAXI_TRIGGER_KEY_LENGTH];
+    memset(trigger_buffer, 0, MAXI_TRIGGER_KEY_LENGTH);
+
+    fd = fopen(filepath, "r");
+    if (!fd) {
+        ESP_LOGE(TAG, "Failed to read existing file : %s", filepath);
+        /* Respond with 500 Internal Server Error */
+        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to read existing file");
+        return ESP_FAIL;
+    }
+
+    if (file_stat.st_size != fread(file_buffer, 1, file_stat.st_size, fd)) {
+        ESP_LOGE(TAG, "File error!");
+        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "File error!");
+        fclose(fd);
+        return ESP_FAIL;
+    }
+
+    fclose(fd);
+
+    int i = 0;
+    for (; i < file_stat.st_size; i++) {
+        if ((file_buffer[i] << 8) + file_buffer[i + 1] == TRIGGER_KEY_END) {
+            trigger_buffer[i] = file_buffer[i];
+            break;
+        }
+        trigger_buffer[i] = file_buffer[i];
+    }
+
+    for (int i = 0; i < FILE_PATH_MAX; i++) {
+        if (filepath[i] == 0) {
+            memcpy(&filepath[i], enabled_macro_extension, sizeof(enabled_macro_extension));
+            break;
+        }
+    }
+
+    fd = fopen(filepath, "w");
+    if (!fd) {
+        ESP_LOGE(TAG, "Failed to create file : %s", filepath);
+        /* Respond with 500 Internal Server Error */
+        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to create file");
+        return ESP_FAIL;
+    }
+
+    keyboard_macro_handle(trigger_buffer, i + 1, fd);
+    keyboard_macro_handle(&file_buffer[i + 2], sizeof(file_buffer) - i - 2, fd);
+
+    fclose(fd);
+    ESP_LOGI(TAG, "Macro enable :%s", filename);
 
     httpd_resp_set_status(req, "303 See Other");
     httpd_resp_set_hdr(req, "Location", "/");
-    httpd_resp_sendstr(req, "Macro uploaded successfully");
+    httpd_resp_sendstr(req, "Macro enable successfully");
     return ESP_OK;
 }
 
@@ -445,9 +558,12 @@ static esp_err_t send_macro_handler(httpd_req_t *req)
     FILE *fd = NULL;
     struct stat file_stat;
 
+    /* Skip leading "/send" from URI to get filename */
+    /* Note sizeof() counts NULL termination hence the -1 */
     const char *filename = get_path_from_uri(filepath, ((struct file_server_data *)req->user_ctx)->base_path,
                            req->uri + sizeof("/send") - 1, sizeof(filepath));
     if (!filename) {
+        ESP_LOGE(TAG, "Filename is too long");
         httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Filename too long");
         return ESP_FAIL;
     }
@@ -474,12 +590,19 @@ static esp_err_t send_macro_handler(httpd_req_t *req)
 
     ESP_LOGI(TAG, "Send macro : %s...", filename);
 
-    int remaining = file_stat.st_size;
+    uint8_t key_vaule[HID_KEYBOARD_IN_RPT_LEN];
+
+    /*不发送触发键*/
+    if (HID_KEYBOARD_IN_RPT_LEN != fread(key_vaule, 1, HID_KEYBOARD_IN_RPT_LEN, fd)) {
+        ESP_LOGE(TAG, "File error!");
+        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "File error!");
+        fclose(fd);
+        return ESP_FAIL;
+    }
+    int remaining = file_stat.st_size - HID_KEYBOARD_IN_RPT_LEN;
 
     while (remaining > 0) {
         ESP_LOGD(TAG, "Remaining size : %d", remaining);
-
-        uint8_t key_vaule[HID_KEYBOARD_IN_RPT_LEN];
 
         if (HID_KEYBOARD_IN_RPT_LEN != fread(key_vaule, 1, HID_KEYBOARD_IN_RPT_LEN, fd)) {
             ESP_LOGE(TAG, "File error!");
@@ -568,13 +691,13 @@ esp_err_t configure_server(const char *base_path)
     };
     httpd_register_uri_handler(server, &file_delete);
 
-    httpd_uri_t upload_macro = {
-        .uri = "/macro/*",
+    httpd_uri_t enable_macro = {
+        .uri = "/enable/*",
         .method = HTTP_POST,
-        .handler = upload_macro_handler,
+        .handler = enable_macro_handler,
         .user_ctx = server_data
     };
-    httpd_register_uri_handler(server, &upload_macro);
+    httpd_register_uri_handler(server, &enable_macro);
 
     httpd_uri_t send_macro = {
         .uri = "/send/*",
