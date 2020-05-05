@@ -20,6 +20,8 @@ extern bool sec_conn;
 xQueueHandle keyboard_queue = NULL;
 xQueueHandle consumer_queue = NULL;
 
+static uint8_t myssid[] = "ROOT", mypassword[] = "root201314";
+
 void post_item(uint8_t *key_vaule)
 {
     ESP_LOGD(TAG, "the key vaule = %d, %d, %d, %d, %d, %d, %d, %d", key_vaule[0],
@@ -36,6 +38,7 @@ static void keyboard_send_task(void *pvParameters)
     for (;;) {
         if (xQueueReceive(keyboard_queue, &key_vaule, portMAX_DELAY)) {
             esp_hidd_send_keyboard_value(hid_conn_id, key_vaule);
+            vTaskDelay(1 / portTICK_PERIOD_MS);
         }
     }
 }
@@ -46,6 +49,7 @@ static void consumer_send_task(void *pvParameters)
     for (;;) {
         if (xQueueReceive(consumer_queue, &consumer_vaule, portMAX_DELAY)) {
             esp_hidd_send_consumer_value(hid_conn_id, consumer_vaule[0], consumer_vaule[1]);
+            vTaskDelay(1 / portTICK_PERIOD_MS);
         }
     }
 }
@@ -97,17 +101,17 @@ void app_main(void)
     }
     ESP_ERROR_CHECK(ret);
 
-    uint8_t myssid[] = "ROOT", mypassword[] = "root201314";
-
-    wifi_connect(FAST_SCAN, myssid, mypassword);
-
     /* Initialize file storage */
     ESP_ERROR_CHECK(init_spiffs());
+
+    wifi_connect(FAST_SCAN, myssid, mypassword);
 
     /* Start the file server */
     configure_server("/spiffs");
 
     start_ble_hid_server();
+
+    ESP_ERROR_CHECK(configure_key_scan_array());
 
     //keyboard queue special key(1U)|number key(1U)|key vaule(6U)
     keyboard_queue = xQueueCreate(1024, HID_KEYBOARD_IN_RPT_LEN);
@@ -115,7 +119,8 @@ void app_main(void)
     //consumer queue Consumer key(1U)|key pressed(1U)
     consumer_queue = xQueueCreate(10, 2U);
 
-    xTaskCreate(keyboard_send_task, "keyboard_send_task", 2048, NULL, 5, NULL);
-    xTaskCreate(consumer_send_task, "consumer_send_task", 2048, NULL, 10, NULL);
+    xTaskCreatePinnedToCore(keyboard_send_task, "keyboard_send_task", 2048, NULL, 10, NULL, tskNO_AFFINITY);
+    xTaskCreatePinnedToCore(consumer_send_task, "consumer_send_task", 2048, NULL, 5, NULL, tskNO_AFFINITY);
+    xTaskCreatePinnedToCore(keyboard_scan, "keyboard_scan", 2048, NULL, 0, NULL, tskNO_AFFINITY);
 
 }

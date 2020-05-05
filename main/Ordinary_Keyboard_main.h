@@ -24,6 +24,13 @@ enum SCAN_MODE {
     FAST_SCAN,
 };
 
+typedef struct {
+    bool        status;               // 是否按下
+    uint8_t     usage_id;             // Usage ID
+    char        assic;                // assic
+    uint8_t     spare;                // 备用
+} key_property;
+
 /**
  * @brief  发送键值
  *         将键值发布到队列的后面，等待发送
@@ -51,3 +58,9 @@ esp_err_t start_ble_hid_server();
 esp_err_t configure_server(const char *base_path);
 
 esp_err_t wifi_connect(int scan_mode, uint8_t *myssid, uint8_t *mypassword);
+
+
+
+esp_err_t configure_key_scan_array();
+
+void keyboard_scan();
