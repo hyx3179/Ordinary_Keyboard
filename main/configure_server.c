@@ -590,10 +590,10 @@ static esp_err_t send_macro_handler(httpd_req_t *req)
 
     ESP_LOGI(TAG, "Send macro : %s...", filename);
 
-    uint8_t key_vaule[HID_KEYBOARD_IN_RPT_LEN];
+    uint8_t key_value[HID_KEYBOARD_IN_RPT_LEN];
 
     /*不发送触发键*/
-    if (HID_KEYBOARD_IN_RPT_LEN != fread(key_vaule, 1, HID_KEYBOARD_IN_RPT_LEN, fd)) {
+    if (HID_KEYBOARD_IN_RPT_LEN != fread(key_value, 1, HID_KEYBOARD_IN_RPT_LEN, fd)) {
         ESP_LOGE(TAG, "File error!");
         httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "File error!");
         fclose(fd);
@@ -604,14 +604,14 @@ static esp_err_t send_macro_handler(httpd_req_t *req)
     while (remaining > 0) {
         ESP_LOGD(TAG, "Remaining size : %d", remaining);
 
-        if (HID_KEYBOARD_IN_RPT_LEN != fread(key_vaule, 1, HID_KEYBOARD_IN_RPT_LEN, fd)) {
+        if (HID_KEYBOARD_IN_RPT_LEN != fread(key_value, 1, HID_KEYBOARD_IN_RPT_LEN, fd)) {
             ESP_LOGE(TAG, "File error!");
             httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "File error!");
             fclose(fd);
             return ESP_FAIL;
         }
 
-        post_item(key_vaule);
+        post_item(key_value);
 
         remaining -= HID_KEYBOARD_IN_RPT_LEN;
     }

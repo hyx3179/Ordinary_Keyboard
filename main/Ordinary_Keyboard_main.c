@@ -22,22 +22,22 @@ xQueueHandle consumer_queue = NULL;
 
 static uint8_t myssid[] = "ROOT", mypassword[] = "root201314";
 
-void post_item(uint8_t *key_vaule)
+void post_item(uint8_t *key_value)
 {
-    ESP_LOGD(TAG, "the key vaule = %d, %d, %d, %d, %d, %d, %d, %d", key_vaule[0],
-             key_vaule[1], key_vaule[2], key_vaule[3], key_vaule[4], key_vaule[5], key_vaule[6], key_vaule[7]);
+    ESP_LOGD(TAG, "the key vaule = %d, %d, %d, %d, %d, %d, %d, %d", key_value[0],
+             key_value[1], key_value[2], key_value[3], key_value[4], key_value[5], key_value[6], key_value[7]);
     extern xQueueHandle keyboard_queue;
-    xQueueSendToBack(keyboard_queue, key_vaule, 0);
-    memset(key_vaule, 0, HID_KEYBOARD_IN_RPT_LEN);
-    xQueueSendToBack(keyboard_queue, key_vaule, 0);
+    xQueueSendToBack(keyboard_queue, key_value, 0);
+    memset(key_value, 0, HID_KEYBOARD_IN_RPT_LEN);
+    xQueueSendToBack(keyboard_queue, key_value, 0);
 }
 
 static void keyboard_send_task(void *pvParameters)
 {
-    uint8_t key_vaule[8];
+    uint8_t key_value[8];
     for (;;) {
-        if (xQueueReceive(keyboard_queue, &key_vaule, portMAX_DELAY)) {
-            esp_hidd_send_keyboard_value(hid_conn_id, key_vaule);
+        if (xQueueReceive(keyboard_queue, &key_value, portMAX_DELAY)) {
+            esp_hidd_send_keyboard_value(hid_conn_id, key_value);
             vTaskDelay(1 / portTICK_PERIOD_MS);
         }
     }
@@ -121,6 +121,6 @@ void app_main(void)
 
     xTaskCreatePinnedToCore(keyboard_send_task, "keyboard_send_task", 2048, NULL, 10, NULL, tskNO_AFFINITY);
     xTaskCreatePinnedToCore(consumer_send_task, "consumer_send_task", 2048, NULL, 5, NULL, tskNO_AFFINITY);
-    xTaskCreatePinnedToCore(keyboard_scan, "keyboard_scan", 2048, NULL, 0, NULL, tskNO_AFFINITY);
+    //xTaskCreatePinnedToCore(keyboard_scan, "keyboard_scan", 2048, NULL, 0, NULL, tskNO_AFFINITY);
 
 }

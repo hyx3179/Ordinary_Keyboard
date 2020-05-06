@@ -115,11 +115,11 @@ void esp_hidd_send_consumer_value(uint16_t conn_id, uint8_t key_cmd, bool key_pr
 //}
 
 
-void esp_hidd_send_keyboard_value(uint16_t conn_id, uint8_t *key_vaule)
+void esp_hidd_send_keyboard_value(uint16_t conn_id, uint8_t *key_value)
 {
-    ESP_LOGD(HID_LE_PRF_TAG, "the key vaule = %d, %d, %d, %d, %d, %d, %d, %d", key_vaule[0], key_vaule[1], key_vaule[2], key_vaule[3], key_vaule[4], key_vaule[5], key_vaule[6], key_vaule[7]);
+    ESP_LOGD(HID_LE_PRF_TAG, "the key vaule = %d, %d, %d, %d, %d, %d, %d, %d", key_value[0], key_value[1], key_value[2], key_value[3], key_value[4], key_value[5], key_value[6], key_value[7]);
     hid_dev_send_report(hidd_le_env.gatt_if, conn_id,
-                        HID_RPT_ID_KEY_IN, HID_REPORT_TYPE_INPUT, HID_KEYBOARD_IN_RPT_LEN, key_vaule);
+                        HID_RPT_ID_KEY_IN, HID_REPORT_TYPE_INPUT, HID_KEYBOARD_IN_RPT_LEN, key_value);
     return;
 }
 

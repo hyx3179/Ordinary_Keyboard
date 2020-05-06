@@ -24,19 +24,19 @@ enum SCAN_MODE {
     FAST_SCAN,
 };
 
-typedef struct {
+typedef struct KEY_PROPERTY {
     bool        status;               // 是否按下
     uint8_t     usage_id;             // Usage ID
     char        assic;                // assic
-    uint8_t     spare;                // 备用
+    uint8_t     byte_position;        // 字节位置
 } key_property;
 
 /**
  * @brief  发送键值
  *         将键值发布到队列的后面，等待发送
- * @param  key_vaule: 键值数组的指针
+ * @param  key_value: 键值数组的指针
  */
-void post_item(uint8_t *key_vaule);
+void post_item(uint8_t *key_value);
 
 /**
  * @brief  键盘宏处理程序
