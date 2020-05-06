@@ -1,14 +1,14 @@
 
 
-// ºêÃüÁî
-// ASCIIÂë²»¿ÉÏÔÊ¾×Ö·û
+// å®å‘½ä»¤
+// ASCIIç ä¸å¯æ˜¾ç¤ºå­—ç¬¦
 #define STR          6050644  //'\\ST'   // String
 #define ESCAPE       6047059  //'\\ES'   // Keyboard ESCAPE
 #define TAB          6050881  //'\\TA'   // Keyboard Tab
 #define CAPSLOCK     6046540  //'\\CL'   // Keyboard Caps Lock
 #define ENTER        6047054  //'\\EN'   // Keyboard Return (ENTER)
 #define BACKSPACE    6046273  //'\\BA'   // Keyboard DELETE (Backspace)
-// ĞŞÊÎ¼ü
+// ä¿®é¥°é”®
 #define LEFTCONTORL  6048835  //'\\LC'   // Keyboard LeftContorl
 #define LEFTSHIFT    6048851  //'\\LS'   // Keyboard LeftShift
 #define LEFTALT      6048833  //'\\LA'   // Keyboard LeftAlt
@@ -18,39 +18,39 @@
 #define RIGHTALT     6050369  //'\\RA'   // Keyboard RightAlt
 #define RIGHTGUI     6050375  //'\\RG'   // Keyboard RightGUI
 
-// wifi É¨ÃèÄ£Ê½
+// wifi æ‰«ææ¨¡å¼
 enum SCAN_MODE {
     SCAN,
     FAST_SCAN,
 };
 
 typedef struct KEY_PROPERTY {
-    bool        status;               // ÊÇ·ñ°´ÏÂ
+    bool        status;               // æ˜¯å¦æŒ‰ä¸‹
     uint8_t     usage_id;             // Usage ID
     char        assic;                // assic
-    uint8_t     byte_position;        // ×Ö½ÚÎ»ÖÃ
+    uint8_t     byte_position;        // å­—èŠ‚ä½ç½®
 } key_property;
 
 /**
- * @brief  ·¢ËÍ¼üÖµ
- *         ½«¼üÖµ·¢²¼µ½¶ÓÁĞµÄºóÃæ£¬µÈ´ı·¢ËÍ
- * @param  key_value: ¼üÖµÊı×éµÄÖ¸Õë
+ * @brief  å‘é€é”®å€¼
+ *         å°†é”®å€¼å‘å¸ƒåˆ°é˜Ÿåˆ—çš„åé¢ï¼Œç­‰å¾…å‘é€
+ * @param  key_value: é”®å€¼æ•°ç»„çš„æŒ‡é’ˆ
  */
 void post_item(uint8_t *key_value);
 
 /**
- * @brief  ¼üÅÌºê´¦Àí³ÌĞò
- * @param  macro: ºê×Ö·û´®µÄÖ¸Õë
- * @param  len: ºê×Ö·û´®µÄ³¤¶È
- * @param  fb: ºêÎÄ¼şÖ¸Õë
+ * @brief  é”®ç›˜å®å¤„ç†ç¨‹åº
+ * @param  macro: å®å­—ç¬¦ä¸²çš„æŒ‡é’ˆ
+ * @param  len: å®å­—ç¬¦ä¸²çš„é•¿åº¦
+ * @param  fb: å®æ–‡ä»¶æŒ‡é’ˆ
  * @return      ESP_OK - success, other - failed
  */
 esp_err_t keyboard_macro_handle(uint8_t *macro, int len, FILE *fd);
 
 /**
-* ºêÒÔ¡°ÃüÁî¡±¿ªÍ·¡°/¡±½áÎ²
-* ÒªÊäÈë¡°/¡±ĞèÓÃ¡°£¿¡±´úÌæ
-* \\ST ÃüÁî
+* å®ä»¥â€œå‘½ä»¤â€å¼€å¤´â€œ/â€ç»“å°¾
+* è¦è¾“å…¥â€œ/â€éœ€ç”¨â€œï¼Ÿâ€ä»£æ›¿
+* \\ST å‘½ä»¤
 */
 
 esp_err_t start_ble_hid_server();

@@ -82,10 +82,10 @@ void keyboard_scan()
             gpio_set_level(vertical_scan_gpio_list[vertical], true);
             for (int horizontal = 0; horizontal < sizeof(horizontal_scan_gpio_list); horizontal++, key_property_index++) {
                 if (gpio_get_level(horizontal_scan_gpio_list[horizontal]) && !key_property_list[key_property_index].status) {
-                    //°´ÏÂ ÇÒ Ö®Ç°Î´°´ÏÂ
+                    //æŒ‰ä¸‹ ä¸” ä¹‹å‰æœªæŒ‰ä¸‹
                     ESP_LOGI(TAG, "axaj : vertical %d horizontal %d", vertical, horizontal);
                     key_property_list[key_property_index].status = true;
-                    //½«¼üÖµ¸³¸øÊ×¸ö¿ÉÓÃÊý¾Ý byte
+                    //å°†é”®å€¼èµ‹ç»™é¦–ä¸ªå¯ç”¨æ•°æ® byte
                     for (int i = 2; i < HID_KEYBOARD_IN_RPT_LEN; i++) {
                         if (key_value[i] == 0) {
                             key_value[i] = key_property_list[key_property_index].usage_id;
@@ -93,7 +93,7 @@ void keyboard_scan()
                     }
                     continue;
                 } else if (key_property_list[key_property_index].status) {
-                    //Ö®Ç°°´ÏÂ ÇÒ ÏÖÔÚÎ´°´ÏÂ
+                    //ä¹‹å‰æŒ‰ä¸‹ ä¸” çŽ°åœ¨æœªæŒ‰ä¸‹
 
                 }
             }

@@ -62,7 +62,7 @@ static esp_err_t init_spiffs(void)
     esp_vfs_spiffs_conf_t conf = {
         .base_path = "/spiffs",
         .partition_label = NULL,
-        .max_files = 50,   // 这决定了可在存储上创建的最大文件数
+        .max_files = 50,   // 杩欏喅瀹氫簡鍙湪瀛樺偍涓婂垱寤虹殑鏈�澶ф枃浠舵暟
         .format_if_mount_failed = true
     };
 
