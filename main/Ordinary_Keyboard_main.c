@@ -14,46 +14,6 @@
 
 #define TAG "main"
 
-extern uint16_t hid_conn_id;
-extern bool sec_conn;
-
-xQueueHandle keyboard_queue = NULL;
-xQueueHandle consumer_queue = NULL;
-
-static uint8_t myssid[] = "ROOT", mypassword[] = "root201314";
-
-void post_item(uint8_t *key_value)
-{
-    ESP_LOGD(TAG, "the key vaule = %d, %d, %d, %d, %d, %d, %d, %d", key_value[0],
-             key_value[1], key_value[2], key_value[3], key_value[4], key_value[5], key_value[6], key_value[7]);
-    extern xQueueHandle keyboard_queue;
-    xQueueSendToBack(keyboard_queue, key_value, 0);
-    memset(key_value, 0, HID_KEYBOARD_IN_RPT_LEN);
-    xQueueSendToBack(keyboard_queue, key_value, 0);
-}
-
-static void keyboard_send_task(void *pvParameters)
-{
-    uint8_t key_value[8];
-    for (;;) {
-        if (xQueueReceive(keyboard_queue, &key_value, portMAX_DELAY)) {
-            esp_hidd_send_keyboard_value(hid_conn_id, key_value);
-            vTaskDelay(1 / portTICK_PERIOD_MS);
-        }
-    }
-}
-
-static void consumer_send_task(void *pvParameters)
-{
-    uint8_t consumer_vaule[2];
-    for (;;) {
-        if (xQueueReceive(consumer_queue, &consumer_vaule, portMAX_DELAY)) {
-            esp_hidd_send_consumer_value(hid_conn_id, consumer_vaule[0], consumer_vaule[1]);
-            vTaskDelay(1 / portTICK_PERIOD_MS);
-        }
-    }
-}
-
 /* Function to initialize SPIFFS */
 static esp_err_t init_spiffs(void)
 {
@@ -102,25 +62,17 @@ void app_main(void)
     ESP_ERROR_CHECK(ret);
 
     /* Initialize file storage */
-    ESP_ERROR_CHECK(init_spiffs());
+    //ESP_ERROR_CHECK(init_spiffs());
 
-    wifi_connect(FAST_SCAN, myssid, mypassword);
+    //wifi_connect(FAST_SCAN, myssid, mypassword);
 
     /* Start the file server */
-    configure_server("/spiffs");
+    //configure_server("/spiffs");
 
     start_ble_hid_server();
 
     ESP_ERROR_CHECK(configure_key_scan_array());
 
-    //keyboard queue special key(1U)|number key(1U)|key vaule(6U)
-    keyboard_queue = xQueueCreate(1024, HID_KEYBOARD_IN_RPT_LEN);
-
-    //consumer queue Consumer key(1U)|key pressed(1U)
-    consumer_queue = xQueueCreate(10, 2U);
-
-    xTaskCreatePinnedToCore(keyboard_send_task, "keyboard_send_task", 2048, NULL, 10, NULL, tskNO_AFFINITY);
-    xTaskCreatePinnedToCore(consumer_send_task, "consumer_send_task", 2048, NULL, 5, NULL, tskNO_AFFINITY);
-    //xTaskCreatePinnedToCore(keyboard_scan, "keyboard_scan", 2048, NULL, 0, NULL, tskNO_AFFINITY);
+    xTaskCreatePinnedToCore(keyboard_scan, "keyboard_scan", 2048, NULL, 0, NULL, tskNO_AFFINITY);
 
 }

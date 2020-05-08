@@ -611,7 +611,7 @@ static esp_err_t send_macro_handler(httpd_req_t *req)
             return ESP_FAIL;
         }
 
-        post_item(key_value);
+        //post_item(key_value);
 
         remaining -= HID_KEYBOARD_IN_RPT_LEN;
     }

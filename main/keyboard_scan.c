@@ -10,11 +10,11 @@
 
 #define TAG "keyboard_scan"
 
-//static bool configure_statu = false;
+extern uint16_t hid_conn_id;
 
-//static uint8_t byte_occupation = 0;
+static bool change_statu = false;
 
-uint8_t key_value[HID_KEYBOARD_IN_RPT_LEN] = { 0 };
+static uint8_t key_value[HID_KEYBOARD_IN_RPT_LEN] = { 0 };
 
 static uint8_t horizontal_scan_gpio_list[] = {
     GPIO_NUM_19,
@@ -78,26 +78,39 @@ esp_err_t configure_key_scan_array()
 void keyboard_scan()
 {
     for (;;) {
-        for (int vertical = 0, key_property_index = 0; vertical < sizeof(vertical_scan_gpio_list); vertical++, key_property_index++) {
+        for (int vertical = 0, key_property_index = 0; vertical < sizeof(vertical_scan_gpio_list); vertical++) {
             gpio_set_level(vertical_scan_gpio_list[vertical], true);
             for (int horizontal = 0; horizontal < sizeof(horizontal_scan_gpio_list); horizontal++, key_property_index++) {
-                if (gpio_get_level(horizontal_scan_gpio_list[horizontal]) && !key_property_list[key_property_index].status) {
-                    //按下 且 之前未按下
-                    ESP_LOGI(TAG, "axaj : vertical %d horizontal %d", vertical, horizontal);
-                    key_property_list[key_property_index].status = true;
-                    //将键值赋给首个可用数据 byte
-                    for (int i = 2; i < HID_KEYBOARD_IN_RPT_LEN; i++) {
-                        if (key_value[i] == 0) {
-                            key_value[i] = key_property_list[key_property_index].usage_id;
+                if (gpio_get_level(horizontal_scan_gpio_list[horizontal])) {
+                    if (!key_property_list[key_property_index].status) {
+                        //按下 且 之前未按下
+                        //标记改变
+                        change_statu = true;
+                        key_property_list[key_property_index].status = true;
+                        //将键值赋给首个可用数据 byte
+                        for (int i = 2; i < HID_KEYBOARD_IN_RPT_LEN; i++) {
+                            if (key_value[i] == 0) {
+                                key_value[i] = key_property_list[key_property_index].usage_id;
+                                key_property_list[key_property_index].byte_position = i;
+                                break;
+                            }
                         }
                     }
                     continue;
                 } else if (key_property_list[key_property_index].status) {
                     //之前按下 且 现在未按下
-
+                    //标记改变
+                    change_statu = true;
+                    key_property_list[key_property_index].status = false;
+                    key_value[key_property_list[key_property_index].byte_position] = 0;
                 }
             }
             gpio_set_level(vertical_scan_gpio_list[vertical], false);
+        }
+        if (change_statu) {
+            esp_hidd_send_keyboard_value(hid_conn_id, key_value);
+            //重置改变标记
+            change_statu = false;
         }
     }
 }
