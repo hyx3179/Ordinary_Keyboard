@@ -108,6 +108,7 @@ void keyboard_scan()
             gpio_set_level(vertical_scan_gpio_list[vertical], false);
         }
         if (change_statu) {
+            //有改变则发送键
             esp_hidd_send_keyboard_value(hid_conn_id, key_value);
             //重置改变标记
             change_statu = false;
