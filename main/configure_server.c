@@ -626,15 +626,10 @@ static esp_err_t send_macro_handler(httpd_req_t *req)
 }
 
 /* Function to start the file server */
-esp_err_t configure_server(const char *base_path)
+esp_err_t configure_server()
 {
+    char base_path[] = "/spiffs";
     static struct file_server_data *server_data = NULL;
-
-    /* Validate file storage base path */
-    if (!base_path || strcmp(base_path, "/spiffs") != 0) {
-        ESP_LOGE(TAG, "File server presently supports only '/spiffs' as base path");
-        return ESP_ERR_INVALID_ARG;
-    }
 
     if (server_data) {
         ESP_LOGE(TAG, "File server already started");

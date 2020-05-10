@@ -18,12 +18,6 @@
 #define RIGHTALT     6050369  //'\\RA'   // Keyboard RightAlt
 #define RIGHTGUI     6050375  //'\\RG'   // Keyboard RightGUI
 
-// wifi 扫描模式
-enum SCAN_MODE {
-    SCAN,
-    FAST_SCAN,
-};
-
 typedef struct KEY_PROPERTY {
     bool        status;               // 是否按下
     uint8_t     usage_id;             // Usage ID
@@ -55,9 +49,16 @@ esp_err_t keyboard_macro_handle(uint8_t *macro, int len, FILE *fd);
 
 esp_err_t start_ble_hid_server();
 
-esp_err_t configure_server(const char *base_path);
+esp_err_t configure_server();
 
-esp_err_t wifi_connect(int scan_mode, uint8_t *myssid, uint8_t *mypassword);
+/**
+ * @brief  Wifi 连接
+ *         默认为 AP 模式 SSID:OK PASSWORD:ok201314
+ *         设置 nvs 的 wifi_connect 命名空间中的
+ *         AP_SSID AP_PASSWORD 自定义 AP
+ *         STA_SSID STA_PASSWORD 连接 WIFI
+ */
+esp_err_t wifi_connect();
 
 
 
