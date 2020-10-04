@@ -8,6 +8,7 @@
 #include "esp_err.h"
 #include "esp_log.h"
 #include "esp_vfs.h"
+#include "nvs_flash.h"
 #include "esp_spiffs.h"
 #include "esp_http_server.h"
 
@@ -15,6 +16,7 @@
 #include "Ordinary_Keyboard_main.h"
 
 #define TAG "configure_server"
+#define WIFI_TAG "wifi_connect"
 
 #define FILE_PATH_MAX (ESP_VFS_PATH_MAX + CONFIG_SPIFFS_OBJ_NAME_LEN)
 
@@ -625,6 +627,42 @@ static esp_err_t send_macro_handler(httpd_req_t *req)
     return ESP_OK;
 }
 
+/* 设置 wifi ssid 和 密码 */
+static esp_err_t wifi_handler(httpd_req_t *req)
+{
+    char buf[128] = { 0 };
+    char *passwed_p = "&PASSWORD=";
+
+    httpd_req_recv(req, buf, req->content_len);
+    passwed_p = strstr(buf, passwed_p);
+
+    int ssid_len = passwed_p - buf - 5;
+    char ssid[ssid_len + 1];
+    memset(ssid, 0, ssid_len + 1);
+    memcpy(&ssid, buf + 5, ssid_len);
+
+    int passwed_len = strlen(buf) - ssid_len - 11;
+    char passwed[passwed_len + 1];
+    memset(passwed, 0, passwed_len + 1);
+    memcpy(&passwed, buf + 5 + ssid_len + 10, passwed_len);
+
+    nvs_handle handle;
+    ESP_ERROR_CHECK(nvs_open(WIFI_TAG, NVS_READWRITE, &handle));
+    ESP_ERROR_CHECK(nvs_set_str(handle, "STA_SSID", ssid));
+    ESP_ERROR_CHECK(nvs_set_str(handle, "STA_PASSWORD", passwed));
+
+    ESP_ERROR_CHECK(nvs_commit(handle));
+    nvs_close(handle);
+
+    ESP_LOGI(TAG, "SSID %s", ssid);
+    ESP_LOGI(TAG, "PASSWORD %s", passwed);
+
+    httpd_resp_set_status(req, "303 See Other");
+    httpd_resp_set_hdr(req, "Location", "/");
+    httpd_resp_sendstr(req, "File uploaded successfully");
+    return ESP_OK;
+}
+
 /* Function to start the file server */
 esp_err_t configure_server()
 {
@@ -685,6 +723,14 @@ esp_err_t configure_server()
         .user_ctx = server_data    // Pass server data as context
     };
     httpd_register_uri_handler(server, &file_delete);
+
+    httpd_uri_t wifi = {
+    .uri = "/wifi",
+    .method = HTTP_POST,
+    .handler = wifi_handler,
+    .user_ctx = NULL
+    };
+    httpd_register_uri_handler(server, &wifi);
 
     httpd_uri_t enable_macro = {
         .uri = "/enable/*",

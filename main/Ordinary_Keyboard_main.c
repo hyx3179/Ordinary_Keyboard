@@ -62,12 +62,12 @@ void app_main(void)
     ESP_ERROR_CHECK(ret);
 
     /* Initialize file storage */
-    //ESP_ERROR_CHECK(init_spiffs());
+    ESP_ERROR_CHECK(init_spiffs());
 
-    //wifi_connect(FAST_SCAN, myssid, mypassword);
+    ESP_ERROR_CHECK(wifi_connect());
 
     /* Start the file server */
-    //configure_server("/spiffs");
+    configure_server("/spiffs");
 
     start_ble_hid_server();
 
